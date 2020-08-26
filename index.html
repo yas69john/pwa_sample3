@@ -2,6 +2,8 @@
 
 <head>
   <link rel="manifest" href="./manifest.json" />
+  <!-- iOS Safari の場合は manifest.jsonで指定したiconを使ってくれないので、以下が必要 -->
+  <link rel="apple-touch-icon" href="./icon_192.png" sizes="192x192"/>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js').then(
