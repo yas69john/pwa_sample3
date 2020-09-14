@@ -3,11 +3,78 @@
 <head>
   <link rel="manifest" href="./manifest.json" />
   <!-- iOS Safari の場合は manifest.jsonで指定したiconを使ってくれないので、以下が必要 -->
-  <link rel="apple-touch-icon" href="./icon_192.png" sizes="192x192"/>
+  <link rel="apple-touch-icon" href="./icon_192.png" sizes="192x192" />
   <script>
+
+    // pushするアプリケーションサーバで生成した公開鍵・暗号鍵ペアの公開鍵を設定する
+    const vapidPublicKey = 'BL-dg2yuGf0zlspalMTi1ms3syZVEf_3rgTXYAijFfmxcvo6un5-bUDCL2h2-bvQQ9UPtz1ezCnB2ghoKjBquBI';
+    const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js').then(
-        function () { console.log('Service Worker Registered'); });
+        function () {
+          console.log('Service Worker Registered');
+
+
+          if (!('showNotification' in ServiceWorkerRegistration.prototype)) {
+            // プッシュ通知がサポートされていない場合
+            console.log("プッシュ通知がサポートされていない");
+            return;
+          }
+
+          if (Notification.permission === 'denied') {
+            // プッシュ通知を拒否された場合
+            console.log("プッシュ通知を拒否された");
+            return;
+          }
+
+          if (!('PushManager' in window)) {
+            // PushManagerが存在しない場合
+            console.log("PushManagerが存在しない");
+            return;
+          }
+          return navigator.serviceWorker.ready;
+        })
+        .then(serviceWorkerRegistration => {
+          return serviceWorkerRegistration.pushManager.getSubscription();
+        })
+        .then(subscription => {
+          if (!subscription) {
+            // すでに購読中
+            console.log("すでに購読中");
+          } else {
+            // 未購読
+            console.log("購読情報：" + subscription.toJSON());
+          }
+        });
+
+      navigator.serviceWorker.ready
+        .then(serviceWorkerRegistration => {
+          return serviceWorkerRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+        })
+        .then(subscription => {
+          // 購読開始
+          console.log(subscription.toJSON());
+        });
+
     }
   </script>
   <title>PWA Sample</title>
